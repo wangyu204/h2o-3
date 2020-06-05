@@ -230,7 +230,17 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     _output._submodels[id] = sm;
     _output.setSubmodelIdx(id);
   }
-
+  
+  protected GLMModel deepClone(Key<GLMModel> result) {
+    GLMModel newModel = IcedUtils.deepCopy(this);
+    newModel._key = result;
+    // Do not clone model metrics
+    newModel._output.clearModelMetrics(false);
+    newModel._output._training_metrics = null;
+    newModel._output._validation_metrics = null;
+    return newModel;
+  }
+  
   public GLMModel clone2(){
     GLMModel res = clone();
     res._output = (GLMOutput)res._output.clone();

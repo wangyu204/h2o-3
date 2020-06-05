@@ -854,12 +854,27 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
   private void buildModel() {
     _model = new GLMModel(_result, _parms, this, _state._ymu, _dinfo._adaptedFrame.lastVec().sigma(), _lmax, _nobs);
     _model._output.setLambdas(_parms);  // set lambda_min and lambda_max if lambda_search is enabled
-    
+
+    if (_parms.hasCheckpoint()) {
+      GLMModel checkpointModel = (GLMModel) DKV.getGet(_parms._checkpoint);
+      validateCheckpointModel(checkpointModel);
+    //  _parms.checkAndInheritCheckpointParams(checkpointModel);
+      _model = ((GLMModel)DKV.getGet(_parms._checkpoint)).deepClone(_result);
+      _model._parms = _parms;
+    } else {
+      _model = new GLMModel(_result, _parms, this, _state._ymu, _dinfo._adaptedFrame.lastVec().sigma(), _lmax, _nobs);
+    }
+
     // clone2 so that I don't change instance which is in the DKV directly
     // (clone2 also shallow clones _output)
     _model.clone2().delete_and_lock(_job._key);
   }
 
+  private void validateCheckpointModel(GLMModel checkpointModel) {
+    if (checkpointModel == null)
+      error("GLM checkpoint model","Invalid checkpoint model from GLMParamters.  Checkpoint model is null.");
+  }
+  
   protected static final long WORK_TOTAL = 1000000;
 
   transient Key [] _toRemove;
