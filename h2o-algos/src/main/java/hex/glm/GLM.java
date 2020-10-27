@@ -697,9 +697,49 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         _parms._gradient_epsilon = _parms._lambda[0] == 0 ? 1e-6 : 1e-4;
         if(_parms._lambda_search) _parms._gradient_epsilon *= 1e-2;
       }
+
+/*      if (_parms.hasCheckpoint()) {
+        StackedEnsembleModel checkpointedModel = (StackedEnsembleModel) DKV.getGet(_parms._checkpoint);
+        validateCheckpoint(checkpointedModel);
+        _parms.checkAndInheritCheckpointParams(checkpointedModel);
+      }*/
       buildModel();
     }
   }
+
+/*  private void validateCheckpoint(StackedEnsembleModel checkpointedModel) {
+    if (checkpointedModel == null)
+      throw new IllegalArgumentException("Checkpoint doesn't exist.");
+    if (_parms.blending() == null) {
+      if (!_parms.train()._key.equals(checkpointedModel._parms.train()._key))
+        Log.warn("Training Stacked Ensemble on new data with CV mode.");
+      // Or we could:
+      // throw new IllegalArgumentException("Checkpoints work only with blending or CV with the original data set!");
+    } else {
+      for (int i = 0; i < _parms.train().domains().length; i++) {
+        if (_parms.blending().domains()[i] == null && checkpointedModel._parms.blending().domains()[i] == null)
+          continue;
+        if (_parms.blending().domains()[i].length > checkpointedModel._parms.blending().domains()[i].length) {
+          throw new IllegalArgumentException(
+                  "Checkpointed model had " + checkpointedModel._parms.blending().domains()[i].length +
+                          " levels but the blending frame has " + _parms.blending().domains()[i].length +
+                          "levels."
+          );
+        }
+        for (int j = 0; j < _parms.blending().domains()[i].length; j++) {
+          // Do a quick check if the elements are present in same order otherwise use try to look for the element in the whole domain
+          if (((checkpointedModel._parms.blending().domains()[i].length > j &&
+                  checkpointedModel._parms.blending().domains()[i][j] != _parms.blending().domains()[i][j])) ||
+                  ArrayUtils.contains(checkpointedModel._parms.blending().domains()[i], _parms.blending().domains()[i][j])) {
+            throw new IllegalArgumentException(
+                    "Blending frame has an unseen category by checkpointed model: " +
+                            _parms.blending()._names[i] + " = " + _parms.blending().domains()[i][j]
+            );
+          }
+        }
+      }
+    }
+  }*/
 
   /**
    * initialize the following parameters for HGLM from either user initial inputs or from a GLM model if user did not 
@@ -852,9 +892,6 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
   // FIXME: contrary to other models, GLM output duration includes computation of CV models:
   //  ideally the model should be instantiated in the #computeImpl() method instead of init
   private void buildModel() {
-    _model = new GLMModel(_result, _parms, this, _state._ymu, _dinfo._adaptedFrame.lastVec().sigma(), _lmax, _nobs);
-    _model._output.setLambdas(_parms);  // set lambda_min and lambda_max if lambda_search is enabled
-
     if (_parms.hasCheckpoint()) {
       GLMModel checkpointModel = (GLMModel) DKV.getGet(_parms._checkpoint);
       validateCheckpointModel(checkpointModel);
@@ -863,7 +900,9 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       _model._parms = _parms;
     } else {
       _model = new GLMModel(_result, _parms, this, _state._ymu, _dinfo._adaptedFrame.lastVec().sigma(), _lmax, _nobs);
+      _model._output.setLambdas(_parms);  // set lambda_min and lambda_max if lambda_search is enabled
     }
+
 
     // clone2 so that I don't change instance which is in the DKV directly
     // (clone2 also shallow clones _output)

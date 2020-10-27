@@ -20,7 +20,8 @@ import water.udf.CFuncRef;
 import water.util.*;
 
 import java.io.Serializable;
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashMap;
 
 import static hex.genmodel.utils.ArrayUtils.flat;
 
@@ -1137,6 +1138,48 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     _output._dispersion = dispersion;
     _output._dispersionEstimated = dispersionEstimated;
   }
+
+/*  public void checkAndInheritCheckpointParams(StackedEnsembleModel model) {
+    StackedEnsembleParameters parms = model._parms;
+    if (_base_models == null || _base_models.length == 0) {
+      _base_models = parms._base_models.clone();
+    } else {
+      for (int i = 0; i < _base_models.length; i++) {
+        if (!_base_models[i].equals(parms._base_models[i]))
+          throw new IllegalArgumentException(
+                  "Base models on " + (i + 1) + "th place differ between checkpointed " +
+                          "model and the new one. Checkpoint's base model: \"" + _base_models[i] +
+                          "\", new model's base model: \"" + parms._base_models[i] + "\"."
+          );
+      }
+    }
+    if ((blending()==null) != (parms.blending()==null))
+      throw new IllegalArgumentException("Stacked Ensemble must be the same type " +
+              "(CV/Blending) as the check point.");
+
+    if ((_fold_column == null && parms._fold_column != null) ||
+            (_fold_column != null && _fold_column.equals(parms._fold_column)))
+      throw new IllegalArgumentException("Checkpoint's fold_column == \"" +
+              parms._fold_column + "\" is different than specified == \"" + _fold_column + "\"");
+
+    if (_metalearner_algorithm != parms._metalearner_algorithm)
+      throw new IllegalArgumentException("Checkpoint's metalearner_algorithm is different than specified!");
+
+    switch (_metalearner_algorithm) {
+      case gbm:
+      case drf:
+      case xgboost:
+      case deeplearning:
+        _metalearner_parameters._checkpoint = model._output._metalearner._key;
+        break;
+      default:
+        throw new IllegalArgumentException(
+                "Checkpointing is allowed only with metalearner of one of the following " +
+                        "types: GBM, DRF, XGBoost, Deep Learning.");
+    }
+  }
+}*/
+
   public static class GLMOutput extends Model.Output {
     Submodel[] _submodels = new Submodel[0];
     DataInfo _dinfo;
