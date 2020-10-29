@@ -254,7 +254,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public enum MissingValuesHandling {
       MeanImputation, PlugValues, Skip
     }
-
+    static String[] CHECKPOINT_NON_MODIFIABLE_FIELDS = {};
     public String algoName() { return "GLM"; }
     public String fullName() { return "Generalized Linear Modeling"; }
     public String javaName() { return GLMModel.class.getName(); }

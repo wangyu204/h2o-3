@@ -20,6 +20,7 @@ import hex.optimization.OptimizationUtils.*;
 import hex.svd.SVD;
 import hex.svd.SVDModel;
 import hex.svd.SVDModel.SVDParameters;
+import hex.util.CheckpointUtils;
 import hex.util.LinearAlgebraUtils;
 import hex.util.LinearAlgebraUtils.BMulTask;
 import hex.util.LinearAlgebraUtils.FindMaxIndex;
@@ -698,11 +699,12 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         if(_parms._lambda_search) _parms._gradient_epsilon *= 1e-2;
       }
 
-/*      if (_parms.hasCheckpoint()) {
-        StackedEnsembleModel checkpointedModel = (StackedEnsembleModel) DKV.getGet(_parms._checkpoint);
-        validateCheckpoint(checkpointedModel);
-        _parms.checkAndInheritCheckpointParams(checkpointedModel);
-      }*/
+      if (_parms.hasCheckpoint()) {
+        Value cv = DKV.get(_parms._checkpoint);
+        CheckpointUtils.getAndValidateCheckpointModel(this, GLMModel.GLMParameters.CHECKPOINT_NON_MODIFIABLE_FIELDS, cv);
+
+        // setting more parameters if needed
+      }
       buildModel();
     }
   }
@@ -893,11 +895,11 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
   //  ideally the model should be instantiated in the #computeImpl() method instead of init
   private void buildModel() {
     if (_parms.hasCheckpoint()) {
-      GLMModel checkpointModel = (GLMModel) DKV.getGet(_parms._checkpoint);
-      validateCheckpointModel(checkpointModel);
-    //  _parms.checkAndInheritCheckpointParams(checkpointModel);
-      _model = ((GLMModel)DKV.getGet(_parms._checkpoint)).deepClone(_result);
-      _model._parms = _parms;
+      GLMModel model = ((GLMModel)DKV.getGet(_parms._checkpoint)).deepClone(_result);
+      // Override original parameters by new parameters
+      model._parms = _parms;
+      // We create a new model
+      _model = model;
     } else {
       _model = new GLMModel(_result, _parms, this, _state._ymu, _dinfo._adaptedFrame.lastVec().sigma(), _lmax, _nobs);
       _model._output.setLambdas(_parms);  // set lambda_min and lambda_max if lambda_search is enabled
