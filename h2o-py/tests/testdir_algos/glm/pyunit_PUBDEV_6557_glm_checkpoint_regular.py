@@ -7,7 +7,7 @@ from h2o.estimators.glm import H2OGeneralizedLinearEstimator
 
 # check varimp for Binomial, Multinomial, Regression at least.
 
-def testvarimp():
+def tesGLMtCheckpointing():
     print("Checking checkpoint for binomials....")
     train = h2o.import_file(path=pyunit_utils.locate("smalldata/glm_test/binomial_20_cols_10KRows.csv"))
     for ind in range(10):
@@ -15,7 +15,7 @@ def testvarimp():
     train["C21"] = train["C21"].asfactor()
     Y = "C21"
     X = list(range(0,20))
-    buildModelCheckVarimp(train, X, Y, "binomial")
+    buildModelCheckpointing(train, X, Y, "binomial")
 
     print("Checking checkpoint for multinomials....")
     train = h2o.import_file(
@@ -28,7 +28,7 @@ def testvarimp():
     train["C11"] = train["C11"].asfactor()
     myY = "C11"
     mX = list(range(0,10))
-    buildModelCheckVarimp(train, mX, myY, "multinomial")
+    buildModelCheckpointing(train, mX, myY, "multinomial")
 
     print("Checking checkpoint for regression....")
     h2o_data = h2o.import_file(
@@ -38,22 +38,22 @@ def testvarimp():
         h2o_data[cname] = h2o_data[cname]
     myY = "C21"
     myX = list(range(20))
-    buildModelCheckVarimp(h2o_data, myX, myY, "gaussian")
+    buildModelCheckpointing(h2o_data, myX, myY, "gaussian")
  
 
-def buildModelCheckVarimp(training_frame, x_indices, y_index, family):
+def buildModelCheckpointing(training_frame, x_indices, y_index, family):
+    split_frames = training_frame.split_frame(ratios=[0.9], seed=12345)
     model = H2OGeneralizedLinearEstimator(family=family, max_iterations=3)
-    model.train(training_frame=training_frame, x=x_indices, y=y_index)
+    model.train(training_frame=split_frames[0], x=x_indices, y=y_index, validation_frame=split_frames[1])
     modelCheckpoint = H2OGeneralizedLinearEstimator(family=family, checkpoint=model.model_id)
-    modelCheckpoint.train(training_frame=training_frame, x=x_indices, y=y_index)
+    modelCheckpoint.train(training_frame=split_frames[0], x=x_indices, y=y_index, validation_frame=split_frames[1])
 
     modelLong = H2OGeneralizedLinearEstimator(family=family) # allow to run to completion
-    modelLong.train(training_frame=training_frame, x=x_indices, y=y_index)
-
-    
-
+    modelLong.train(training_frame=split_frames[0], x=x_indices, y=y_index, validation_frame=split_frames[1])
 
 if __name__ == "__main__":
-  pyunit_utils.standalone_test(testvarimp)
+    h2o.init(ip="192.168.86.41", port=54321, strict_version_check=False)
+    pyunit_utils.standalone_test(tesGLMtCheckpointing)
 else:
-    testvarimp()
+    h2o.init(ip="192.168.86.41", port=54321, strict_version_check=False)
+    tesGLMtCheckpointing()
